@@ -3,7 +3,6 @@ package DBGLogParser
 import (
 	"bytes"
 	"encoding/binary"
-	"fmt"
 	"os"
 )
 type ERR_NOT_A_TRACE struct{}
@@ -46,18 +45,19 @@ type traceCtx struct{
 func checkMagic(data []byte) (err error) {
   // Probably in future we will expand list of trace files, so maybe in future we will have to move magic variable to separate list with "magic constants".
   magic := []byte{'T', 'R', 'A', 'C'}
-  if !bytes.Equal(data[0:3], magic) {
+  if !bytes.Equal(data[0:4], magic) {
     err = &ERR_NOT_A_TRACE{}
   }
-  return
+  return err
 }
 
 func checkJSONLength(data []byte) (length uint32, err error) {
-  length = binary.LittleEndian.Uint32(data[4:7])
+  length = binary.LittleEndian.Uint32(data[4:8])
   if length==0 {
     return 0, &ERR_ZERO_TRACE_LENGTH{}
   } 
-  if (data[length+8]!=0) | (uint32(len(data)) < length+8) {
+  // check that length of magick + dword(jsonLength) + json is >= length
+  if uint32(len(data)+8) < length || data[length+8]!=byte(0) {
     // I expect \0 after the end of enclosing bracket
     return length, &ERR_JSON_FORMAT_ERROR{}
   }
@@ -71,7 +71,5 @@ func Parse(filename string) (ctx traceCtx, err error){
   if err = checkMagic(data); err != nil {
     return ctx, err
   }
-
-  fmt.Println(jsonLength)
   return ctx, nil
 }

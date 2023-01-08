@@ -4,25 +4,53 @@ import (
   "testing"
 )
 
+func TestWrongMagick(t* testing.T){
+  wrongMagic := []byte{
+    // providing elf file magick instead of TRAC
+    0x7F, 0x45, 0x4C, 0x46,
+    0x02, 0x01, 0x01, 0x00,
+    0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00,
+  }
+  if (checkMagic(wrongMagic) != &ERR_NOT_A_TRACE{}) {
+    t.Fatalf("Check wrong magic fail.")
+  }
+
+}
+func TestWrongLength(t *testing.T)  {
+  wrongLength:= []byte{
+    // this time correct magic file, but json length and delcared length are different.
+    // As json length I consider len(file) - len(TRAC)+len(declaredJsonlength)
+    'T', 'R', 'A', 'C',
+    0x12, 0x1d, 0x1c, 0x22,
+    0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00,
+  }
+  _, err := checkJSONLength(wrongLength)
+  if ( err != &ERR_JSON_FORMAT_ERROR{}) {
+    t.Fatalf("Check wrong length fail.")
+  }
+}
+
+func TestZeroLength(t *testing.T)  {
+  zeroLength:= []byte {
+    // this time correct magic file, but json length and delcared length are different.
+    // As json length I consider len(file) - len(TRAC)+len(declaredJsonlength)
+    'T', 'R', 'A', 'C',
+    0x0, 0x0, 0x0, 0x0,
+    0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00,
+  }
+  _, err := checkJSONLength(zeroLength)
+  if (err != &ERR_ZERO_TRACE_LENGTH{}) {
+    t.Fatalf("Check zero length fail.")
+  }
+
+}
+
 func TestFormatCheck(t *testing.T)  {
-  files := map[string][]byte{
-    "wrongMagic": {
-      // providing elf file magec instead of TRAC
-      0x7F, 0x45, 0x4C, 0x46,
-      0x02, 0x01, 0x01, 0x00,
-      0x00, 0x00, 0x00, 0x00,
-      0x00, 0x00, 0x00, 0x00,
-    },
-    "wronglength": {
-      // this time correct magic file, but json length and delcared length are different.
-      // As json length I consider len(file) - len(TRAC)+len(declaredJsonlength)
-      'T', 'R', 'A', 'C',
-      0x12, 0x1d, 0x1c, 0x22,
-      0x00, 0x00, 0x00, 0x00,
-      0x00, 0x00, 0x00, 0x00,
-    },
-    "correctFile": {
-      // This file contains only headers, i.e. magic, dword representind length and json with compression and other info like path to executable.
+  correctFile := []byte{
+      // This file contains only headers, i.e. magic, dword representing length and json with compression and other info like path to executable.
       0x54, 0x52, 0x41, 0x43, 0x8F, 0x00, 0x00, 0x00, 0x7B, 0x22, 0x76, 0x65, 0x72, 0x22, 0x3A, 0x31, 
       0x2C, 0x22, 0x61, 0x72, 0x63, 0x68, 0x22, 0x3A, 0x22, 0x78, 0x36, 0x34, 0x22, 0x2C, 0x22, 0x68, 
       0x61, 0x73, 0x68, 0x41, 0x6C, 0x67, 0x6F, 0x72, 0x69, 0x74, 0x68, 0x6D, 0x22, 0x3A, 0x22, 0x6D, 
@@ -34,9 +62,11 @@ func TestFormatCheck(t *testing.T)  {
       0x6F, 0x63, 0x75, 0x6D, 0x65, 0x6E, 0x74, 0x73, 0x5C, 0x5C, 0x43, 0x72, 0x61, 0x63, 0x6B, 0x4D, 
       0x65, 0x2E, 0x65, 0x78, 0x65, 0x22, 0x7D, 0x00, 0xAC, 0x01, 0x83, 0x64, 0x01, 0x00, 0x00, 0x48, 
       0x89, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    },
+    }
+  
+  length, err := checkJSONLength(correctFile)
+  if ( err != nil || length != 0x8f) {
+    t.Fatalf("Correct file parse error.")
   }
-  // TODO: 1) Pass "wrongMagic" to function, if returns error about wrong magic - pass test, else fail
-  // TODO: 2) Pass "wrongLength" to function, if base+dword(length) out of bounds or does not point to \0, then fail.
-  // TODO: 3) check that base + dword length of json header points to \0. If true - pass test, else fail.
+
 }
