@@ -7,34 +7,25 @@ import (
 	"os"
 )
 
+
+
 type ERR_NOT_A_TRACE struct{}
-
-type TraceJson struct{
-  Ver int
-  Arch string
-  HashAlgorithm string
-  Hash string
-  Compression string
-  Path string
-}
-
 func (m *ERR_NOT_A_TRACE) Error() string {
   return "Please, provide a trace file"
 }
 
 type ERR_ZERO_TRACE_LENGTH struct{}
-
 func (m *ERR_ZERO_TRACE_LENGTH) Error() string {
   return "Trace file seems to be empty"
 }
 
 type ERR_JSON_FORMAT_ERROR struct{}
-
 func (m *ERR_JSON_FORMAT_ERROR) Error() string {
   return "json seems to be corrupted"
 }
 
-// Execute ONLY if there is no possibility to recover from error. If there is, prefer to return error structure instead
+// Execute ONLY if there is no possibility to recover from error.
+// If there is, prefer to return error structure instead
 func check(e error) {
   if e != nil {
     panic(e)
@@ -47,6 +38,16 @@ type stepSnapshot struct {
   registerOps         []string
 }
 
+// data  stored in JSON header of tracefile
+type TraceJson struct{
+  Ver int
+  Arch string
+  HashAlgorithm string
+  Hash string
+  Compression string
+  Path string
+}
+
 type traceCtx struct {
   registerNames  []string
   registerValues []int
@@ -54,6 +55,7 @@ type traceCtx struct {
   jsonData       *TraceJson
 }
 
+// wtf is bblock??
 type bBlock struct{
   blockType uint8
   registerChanges uint8
@@ -99,6 +101,7 @@ func Parse(filename string) (ctx traceCtx, err error) {
   check(err) //TOFIX: recover from error
   jsonData := extractJSON(data, length, 8)
   ctx.jsonData = readJSON(jsonData)
+
   return ctx, nil
 }
 
@@ -115,6 +118,7 @@ func extractJSON(raw []byte, length uint32, offset uint8) (json []byte) {
 func readJSON(jsonData []byte) (*TraceJson) {
   var trace TraceJson
   err := json.Unmarshal(jsonData, &trace)
+
   check(err) //TOFIX: recover from error
   return &trace
 }

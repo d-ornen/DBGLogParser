@@ -72,7 +72,7 @@ func TestFormatCheck(t *testing.T)  {
 
 }
 func TestExtractJson(t *testing.T) {
-  testFile, err := os.ReadFile("testFiles/test1.trace64")
+  testFile, err := os.ReadFile("test/test1.trace64")
   check(err)
   length, err := checkJSONLength(testFile)
   check(err)
@@ -83,7 +83,7 @@ func TestExtractJson(t *testing.T) {
 }
 
 func TestReadJson(t *testing.T) {
-  testFile, err := os.ReadFile("testFiles/test1.trace64")
+  testFile, err := os.ReadFile("test/test1.trace64")
   check(err)
   length, err := checkJSONLength(testFile)
   check(err)
@@ -110,9 +110,24 @@ func TestReadJson(t *testing.T) {
 }
 
 func TestParse(t *testing.T)  {
-  trace, err := Parse("testFiles/test1.trace64")
+  trace, err := Parse("test/test1.trace64")
   check(err)
   if trace.jsonData == nil || trace.jsonData.Hash != "0x3A6C6FA546C8A44E"{
     t.Fatalf("Failed to parse tracefile.")
+  }
+  if trace.jsonData.Ver != 1 {
+    t.Fatalf("Failed to parse verison.")
+  }
+  if trace.jsonData.Arch != "x64"{
+    t.Fatalf("Failed to parse architecture.")
+  }
+  if trace.jsonData.HashAlgorithm != "murmurhash" {
+    t.Fatalf("Failed to parse hash algorithm.")
+  }
+  if trace.jsonData.Compression != "" {
+    t.Fatalf("Failed to parse compression.")
+  }
+  if trace.jsonData.Path != "F:\\Factorio\\bin\\x64\\factorio.exe" {
+    t.Fatalf("Failed to parse path.")
   }
 }
