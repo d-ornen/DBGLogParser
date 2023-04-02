@@ -7,8 +7,6 @@ import (
 	"os"
 )
 
-
-
 type ERR_NOT_A_TRACE struct{}
 func (m *ERR_NOT_A_TRACE) Error() string {
   return "Please, provide a trace file"
@@ -32,12 +30,6 @@ func check(e error) {
   }
 }
 
-type stepSnapshot struct {
-  instructionMnemonic []string
-  memoryOps           []string
-  registerOps         []string
-}
-
 // data  stored in JSON header of tracefile
 type TraceJson struct{
   Ver int
@@ -51,18 +43,20 @@ type TraceJson struct{
 type traceCtx struct {
   registerNames  []string
   registerValues []int
-  parsedSteps    []stepSnapshot
+  parsedSteps    []bTraceBlock
   jsonData       *TraceJson
+  bTraceBlockDataStart uint64
+  bTraceBlockDataEnd uint64
 }
 
-// wtf is bblock??
-type bBlock struct{
+type bTraceBlock struct{
   blockType uint8
   registerChanges uint8
   memoryAccesses uint8
   blockFlagsAndOpcodeSize uint8
   threadID uint32
   opcode []uint8
+  registerChangePosition []uint8
   registerChangeNewData []uint32
   memoryAccessFlags []uint8
   memoryAccessAddress []uint32
@@ -84,13 +78,14 @@ func checkJSONLength(data []byte) (length uint32, err error) {
   if length == 0 {
     return 0, &ERR_ZERO_TRACE_LENGTH{}
   }
-  // check that length of magick + dword(jsonLength) + json is >= length
+  // check that length of magick + dword(jsonLength) + json is >= declared length of json
   if uint32(len(data)+8) < length {
     return length, &ERR_JSON_FORMAT_ERROR{}
   }
   // If length is not zero and not less that length of data, then assume there is no errors in json
   return length, nil
 }
+
 
 func Parse(filename string) (ctx traceCtx, err error) {
   data, err := os.ReadFile(filename)
@@ -101,13 +96,18 @@ func Parse(filename string) (ctx traceCtx, err error) {
   check(err) //TOFIX: recover from error
   jsonData := extractJSON(data, length, 8)
   ctx.jsonData = readJSON(jsonData)
+  // padding bytes = magic + json length + json
+  ctx.bTraceBlockDataStart = uint64(4+4+length)
+  for {
+    ctx.parsedSteps = append(ctx.parsedSteps, parseBinaryTraceBlock(ctx, data))
+  }
 
   return ctx, nil
 }
 
-//func parseBinaryTraceBlock(data []byte, blocksParsed int64) (binaryBlock *bBlock) {
-//  //TODO: parse binary block
-//}
+func parseBinaryTraceBlock(ctx traceCtx, data []byte) (binaryBlock bTraceBlock){
+  // TODO: cast from ctx.bTraceBlockDataStart to end of structure (size is dynamic) 
+}
 
 func extractJSON(raw []byte, length uint32, offset uint8) (json []byte) {
   // does not contain \0 at end
